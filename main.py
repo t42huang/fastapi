@@ -65,12 +65,17 @@ async def get_user_item(user_id: int, item_id: str, q: str, short: bool = False)
         )
         return item
 
-
+# request body
 class Item(BaseModel):
     name: str
     description: str
     price: float
-    tax: float
+    tax: Union[float, None] = None # optional param
+
+
+# @app.post("/items/")
+# async def create_item(item: Item):
+#     return item
 
 
 @app.post("/items")
