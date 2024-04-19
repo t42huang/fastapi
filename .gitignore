@@ -1,5 +1,6 @@
  __pycache__
  /tmp
- __pycache__/
  .idea/
  README.md
+__pycache__/
+*/**/__pycache__/
