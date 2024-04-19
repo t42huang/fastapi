@@ -1,8 +1,10 @@
-from typing import Union, Annotated
+from typing import Union, Annotated, Set
 from enum import Enum
 
-from fastapi import FastAPI, Query, Path
-from pydantic import BaseModel
+from fastapi import FastAPI, Query, Path, Body
+from pydantic import BaseModel, Field, HttpUrl
+from typing import List
+from typing_extensions import Annotated
 
 app = FastAPI()
 
@@ -100,11 +102,18 @@ async def read_user_item(item_id: str, needy: str, skip: int = 0, limit: Union[i
 
 
 # request body
+class Image(BaseModel):
+    url: HttpUrl
+    name: str
+
 class Item(BaseModel):
     name: str
-    description: str
-    price: float
+    description: Union[str, None] = Field(default=None, title="the description of the item", max_length=300)
+    price: float = Field(gt=0, description="The price must be greater than zero")
     tax: Union[float, None] = None  # optional param
+    tags: list[str] = []
+    tags_set: Set[str] = set()
+    image: Union[List[Image], None] = None
 
 
 class User(BaseModel):
@@ -121,7 +130,7 @@ async def create_item(item: Item):
     return item_dict
 
 
-@app.put("/items/{item_id}")
+@app.put("/items/2/{item_id}")
 async def create_item_with_put(item_id: int, item: Item, q: Union[str, None] = None):
     result = {"item_id": item_id, **item.dict()}
     if q:
@@ -130,8 +139,8 @@ async def create_item_with_put(item_id: int, item: Item, q: Union[str, None] = N
 
 
 @app.put("/items/{item_id}")
-async def update_item(
-        item_id: Annotated[int, Path(title="The ID of the item to get", ge=0, le=1000)],
+async def update_item2(
+        item_id: int,
         q: Union[str, None] = None,
         item: Union[Item, None] = None,
         user: Union[User, None] = None
@@ -141,4 +150,49 @@ async def update_item(
         results.update({"q": q})
     if item:
         results = {"item": item, "user": User}
+    return results
+
+
+@app.put("/items/3/{item_id}")
+async def update_item3(
+        item_id: int,
+        q: Union[str, None] = None,
+        item: Union[Item, None] = None,
+        user: Union[User, None] = None
+):
+    results = {"item_id": item_id, "user": User}
+    if q:
+        results.update({"q": q})
+    if item:
+        results = {"item": item, "user": User}
+    return results
+
+
+@app.put("/items/{item_id}")
+async def update_item(
+        item_id: int,
+        q: Union[str, None] = None,
+        item: Item = Body(embed=True),
+):
+    results = {"item_id": item_id}
+    if q:
+        results.update({"q": q})
+    if item:
+        results = {"item": item}
+    return results
+
+
+@app.put("/items/4/{item_id}")
+async def update_item_4(
+        item_id: int,
+        q: Union[str, None] = None,
+        item: Union[Item,None] = None
+        # item: Item = Body(embed=True),
+
+    ):
+    results = {"item_id": item_id, "item": item}
+    if q:
+        results.update({"q": q})
+    if item:
+        results = {"item_id": item_id, "item": item}
     return results
