@@ -3,9 +3,11 @@ from typing import Union, Annotated, Set
 from enum import Enum
 from uuid import UUID
 
-from fastapi import FastAPI, Query, Path, Body, Form
+from fastapi import FastAPI, Query, Path, Body, Form, File, UploadFile
 from pydantic import BaseModel, Field, HttpUrl, EmailStr
 from typing import List
+
+from starlette.responses import HTMLResponse
 from typing_extensions import Annotated
 
 app = FastAPI()
@@ -251,7 +253,7 @@ class UserOut(BaseModel):
     full_name: Union[str, None] = None
 
 
-@app.post("/user/4/", response_model=UserOut)
+@app.post("/user/4/", response_model=UserOut, tags=["User"])
 async def create_user(user: UserIn):
     return user
 
@@ -292,7 +294,7 @@ def fake_save_user(user_in: UserIn):
     return user_in_db
 
 
-@app.post("/user/7/", response_model=UserOut)
+@app.post("/user/7/", response_model=UserOut, tags=["User"])
 async def create_user_7(user_in: UserIn):
     user_saved = fake_save_user(user_in)
     return user_saved
@@ -301,3 +303,61 @@ async def create_user_7(user_in: UserIn):
 @app.post("/login/")
 async def login(username: str = Form(), password: str = Form()):
     return {"username": username}
+
+
+@app.post("/files/", tags=["upload"])
+async def create_files(file: bytes=File()):
+    return {"file_size": len(file)}
+
+@app.post("/uploadfile/", tags=["upload"])
+async def create_upload_file(file: UploadFile):
+    return {"filename": file.filename}
+
+
+
+
+
+@app.post("/files/2/", tags=["upload"], summary="update multiple files, this is summary", description="this is description")
+async def create_files_2(
+    files: List[bytes] = File(description="Multiple files as bytes"),
+):
+    """
+    test docstring, markdown doc
+    Create an item with all the information:
+
+    - **name**: each item must have a name
+    - **description**: a long description
+    - **price**: required
+    - **tax**: if the item doesn't have tax, you can omit this
+    - **tags**: a set of unique tag strings for this item
+    """
+
+    return {"file_sizes": [len(file) for file in files]}
+
+
+@app.post("/uploadfiles/2/", tags=["upload"], deprecated=True)
+async def create_upload_files_2(
+    files: List[UploadFile] = File(description="Multiple files as UploadFile"),
+):
+    return {"filenames": [file.filename for file in files]}
+
+
+@app.get("/")
+async def main():
+    content = """
+<body>
+<form action="/files/" enctype="multipart/form-data" method="post">
+<input name="files" type="file" multiple>
+<input type="submit">
+</form>
+<form action="/uploadfiles/" enctype="multipart/form-data" method="post">
+<input name="files" type="file" multiple>
+<input type="submit">
+</form>
+</body>
+    """
+    return HTMLResponse(content=content)
+
+
+
+
