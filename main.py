@@ -114,6 +114,7 @@ class Item(BaseModel):
     description: Union[str, None] = Field(default=None, title="the description of the item", max_length=300)
     price: float = Field(gt=0, description="The price must be greater than zero")
     tax: Union[float, None] = None  # optional param
+    test: str = "test"
     tags: list[str] = []
     tags_set: Set[str] = set()
     image: Union[List[Image], None] = None
@@ -253,5 +254,18 @@ class UserOut(BaseModel):
 async def create_user(user: UserIn):
     return user
 
+# 响应模型编码参数
+items = {
+    "foo": {"name": "Foo", "price": 50.2},
+    "bar": {"name": "Bar", "description": "The bartenders", "price": 62, "tax": 20.2},
+    "baz": {"name": "Baz", "description": None, "price": 50.2, "tax": 10.5, "tags": []},
+}
 
+@app.get("/items/6/{item_id}", response_model=Item, response_model_exclude_unset=True)
+async def read_item_6(item_id: str):
+    return items[item_id]
+
+@app.get("/items/7/{item_id}", response_model=Item, response_model_exclude={"tax"})
+async def read_items_7(item_id: str):
+    return items[item_id]
 
