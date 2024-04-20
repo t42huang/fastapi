@@ -1,5 +1,7 @@
+from datetime import datetime, timedelta, time
 from typing import Union, Annotated, Set
 from enum import Enum
+from uuid import UUID
 
 from fastapi import FastAPI, Query, Path, Body
 from pydantic import BaseModel, Field, HttpUrl
@@ -66,7 +68,7 @@ async def get_model(model_name: ModelName):
 
 # q 是可选参数，默认值位None
 @app.get("/items/2/{item_id}")
-async def read_item(item_id: str, q: Union[str, None] = None):
+async def read_item_2(item_id: str, q: Union[str, None] = None):
     if q:
         return {"Item_id": item_id, "q": q}
     return {"item_id": id}
@@ -105,6 +107,7 @@ async def read_user_item(item_id: str, needy: str, skip: int = 0, limit: Union[i
 class Image(BaseModel):
     url: HttpUrl
     name: str
+
 
 class Item(BaseModel):
     name: str
@@ -186,13 +189,36 @@ async def update_item(
 async def update_item_4(
         item_id: int,
         q: Union[str, None] = None,
-        item: Union[Item,None] = None
+        item: Union[Item, None] = None
         # item: Item = Body(embed=True),
 
-    ):
+):
     results = {"item_id": item_id, "item": item}
     if q:
         results.update({"q": q})
     if item:
         results = {"item_id": item_id, "item": item}
     return results
+
+
+@app.put("/items/5/{item_id}")
+async def read_items_5(
+    item_id: UUID,
+    start_datetime: Annotated[datetime, Body()],
+    end_datetime: Annotated[datetime, Body()],
+    process_after: Annotated[timedelta, Body()],
+    repeat_at: Annotated[Union[time, None], Body()] = None,
+):
+    start_process = start_datetime + process_after
+    duration = end_datetime - start_process
+    return {
+        "item_id": item_id,
+        "start_datetime": start_datetime,
+        "end_datetime": end_datetime,
+        "process_after": process_after,
+        "repeat_at": repeat_at,
+        "start_process": start_process,
+        "duration": duration,
+    }
+
+
