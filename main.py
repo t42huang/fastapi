@@ -3,7 +3,7 @@ from typing import Union, Annotated, Set
 from enum import Enum
 from uuid import UUID
 
-from fastapi import FastAPI, Query, Path, Body
+from fastapi import FastAPI, Query, Path, Body, Form
 from pydantic import BaseModel, Field, HttpUrl, EmailStr
 from typing import List
 from typing_extensions import Annotated
@@ -204,11 +204,11 @@ async def update_item_4(
 
 @app.put("/items/5/{item_id}")
 async def read_items_5(
-    item_id: UUID,
-    start_datetime: Annotated[datetime, Body()],
-    end_datetime: Annotated[datetime, Body()],
-    process_after: Annotated[timedelta, Body()],
-    repeat_at: Annotated[Union[time, None], Body()] = None,
+        item_id: UUID,
+        start_datetime: Annotated[datetime, Body()],
+        end_datetime: Annotated[datetime, Body()],
+        process_after: Annotated[timedelta, Body()],
+        repeat_at: Annotated[Union[time, None], Body()] = None,
 ):
     start_process = start_datetime + process_after
     duration = end_datetime - start_process
@@ -222,14 +222,15 @@ async def read_items_5(
         "duration": duration,
     }
 
+
 # 响应模型
 
-@app.post("/items/3/", response_model = Item)
-async def create_item_3(item:Item):
+@app.post("/items/3/", response_model=Item)
+async def create_item_3(item: Item):
     return item
 
 
-@app.get("/items/3/", response_model = List[Item])
+@app.get("/items/3/", response_model=List[Item])
 async def create_item_3():
     return [
         {"name": "leo", "price": 12},
@@ -254,6 +255,7 @@ class UserOut(BaseModel):
 async def create_user(user: UserIn):
     return user
 
+
 # 响应模型编码参数
 items = {
     "foo": {"name": "Foo", "price": 50.2},
@@ -261,11 +263,41 @@ items = {
     "baz": {"name": "Baz", "description": None, "price": 50.2, "tax": 10.5, "tags": []},
 }
 
+
 @app.get("/items/6/{item_id}", response_model=Item, response_model_exclude_unset=True)
 async def read_item_6(item_id: str):
     return items[item_id]
+
 
 @app.get("/items/7/{item_id}", response_model=Item, response_model_exclude={"tax"})
 async def read_items_7(item_id: str):
     return items[item_id]
 
+
+class UserInDB(BaseModel):
+    username: str
+    hashed_password: str
+    email: str
+    full_name: Union[str, None] = None
+
+
+def fake_password_hasher(raw_password: str):
+    return "supersecret" + raw_password
+
+
+def fake_save_user(user_in: UserIn):
+    hashed_password = fake_password_hasher(user_in.password)
+    user_in_db = UserInDB(**user_in.dict(), hashed_password=hashed_password)
+    print("User saved! ..not really")
+    return user_in_db
+
+
+@app.post("/user/7/", response_model=UserOut)
+async def create_user_7(user_in: UserIn):
+    user_saved = fake_save_user(user_in)
+    return user_saved
+
+
+@app.post("/login/")
+async def login(username: str = Form(), password: str = Form()):
+    return {"username": username}
