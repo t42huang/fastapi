@@ -221,4 +221,17 @@ async def read_items_5(
         "duration": duration,
     }
 
+# 响应模型
+
+@app.post("/items/3/", response_model = Item)
+async def create_item_3(item:Item):
+    return item
+
+
+@app.get("/items/3/", response_model = List[Item])
+async def create_item_3():
+    return [
+        {"name": "leo", "price": 12},
+        {"name": "leo2", "price": 123}
+    ]
 
