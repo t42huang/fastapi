@@ -4,7 +4,7 @@ from enum import Enum
 from uuid import UUID
 
 from fastapi import FastAPI, Query, Path, Body
-from pydantic import BaseModel, Field, HttpUrl
+from pydantic import BaseModel, Field, HttpUrl, EmailStr
 from typing import List
 from typing_extensions import Annotated
 
@@ -234,4 +234,24 @@ async def create_item_3():
         {"name": "leo", "price": 12},
         {"name": "leo2", "price": 123}
     ]
+
+
+class UserIn(BaseModel):
+    username: str
+    password: str
+    email: str
+    full_name: Union[str, None] = None
+
+
+class UserOut(BaseModel):
+    username: str
+    email: str
+    full_name: Union[str, None] = None
+
+
+@app.post("/user/4/", response_model=UserOut)
+async def create_user(user: UserIn):
+    return user
+
+
 
