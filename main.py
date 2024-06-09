@@ -3,13 +3,15 @@ from typing import Union, Annotated, Set
 from enum import Enum
 from uuid import UUID
 
-from fastapi import FastAPI, Query, Path, Body, Form, File, UploadFile
+from fastapi import FastAPI, Query, Path, Body, Form, File, UploadFile, HTTPException
+from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel, Field, HttpUrl, EmailStr
 from typing import List
 
 from starlette.responses import HTMLResponse
 from typing_extensions import Annotated
 
+#创建 fastAPI的实例
 app = FastAPI()
 
 
@@ -302,7 +304,7 @@ async def create_user_7(user_in: UserIn):
 
 @app.post("/login/")
 async def login(username: str = Form(), password: str = Form()):
-    return {"username": username}
+    return {"username": username, "password": password}
 
 
 @app.post("/files/", tags=["upload"])
@@ -311,6 +313,7 @@ async def create_files(file: bytes=File()):
 
 @app.post("/uploadfile/", tags=["upload"])
 async def create_upload_file(file: UploadFile):
+
     return {"filename": file.filename}
 
 
@@ -342,22 +345,53 @@ async def create_upload_files_2(
     return {"filenames": [file.filename for file in files]}
 
 
-@app.get("/")
-async def main():
-    content = """
-<body>
-<form action="/files/" enctype="multipart/form-data" method="post">
-<input name="files" type="file" multiple>
-<input type="submit">
-</form>
-<form action="/uploadfiles/" enctype="multipart/form-data" method="post">
-<input name="files" type="file" multiple>
-<input type="submit">
-</form>
-</body>
-    """
-    return HTMLResponse(content=content)
+# 数据库
+@app.get("/items/8/{item_id}", response_model=Item)
+async def read_item_8(item_id: str):
+    return items[item_id]
+
+@app.put("/items/8/{item_id}", response_model=Item)
+async def update_item_8(item_id: str, item: Item):
+    update_item_encoded = jsonable_encoder(item)
+    items[item_id] = update_item_encoded
+    return update_item_encoded
 
 
+@app.put("/items/9/{item_id}", response_model=Item)
+async def update_item_9(item_id: str, item: Item):
+    # 拿到数据，json
+    stored_item_encoded = items[item_id]
+    # 转成item model
+    stored_item_model = Item(**stored_item_encoded)
+    # 更新数据 添加exclude_unset
+    update_data = item.dict(exclude_unset=True)
+    # 将更新的数据 放到模型里去
+    update_item = stored_item_model.copy(update=update_data)
+    items[item_id] = jsonable_encoder(update_item)
+    return update_item
 
 
+@app.put("items/10/{item_id}")
+async def update(item_id: str, item: Item):
+    store_item = item[item_id]
+    update_data_model = Item(**store_item)
+    update_data = item.dict(exclude_unset=True)
+    update_item = update_data_model.copy(update=update_data)
+    item[item_id] = jsonable_encoder(update_item)
+    return update_item
+
+
+@app.get("/items/11/{item_id}")
+async def read_item(item_id: str):
+    if item_id not in items:
+        raise HTTPException(status_code=404, detail="Item not found")
+    return {"item": items[item_id], "status_code": 404}
+
+@app.get("/items/12/{item_id}")
+async def read_item(item_id: str):
+    if item_id not in items:
+        raise HTTPException(status_code=404,
+                            headers={"X-Error": "There goes my error"},
+                            detail="Item not found",
+                            )
+    return {"item": items[item_id], "status_code": 404}
